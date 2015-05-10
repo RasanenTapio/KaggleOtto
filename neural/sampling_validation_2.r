@@ -19,13 +19,13 @@ trainfull$target <- as.numeric(trainfull$target)
 
 trainfull <- trainfull[,-1]
 
-#nimet <- c(names(trainfull)[94], names(trainfull)[-94])
-#trainfull <- cbind(trainfull$target, log10(trainfull[,-94]+1)) # logaritmi
-#names(trainfull) <- nimet
+nimet <- c(names(trainfull)[94], names(trainfull)[-94])
+trainfull <- cbind(trainfull$target, log10(trainfull[,-94]+1)) # logaritmi
+names(trainfull) <- nimet
 
-#nimet <- names(testfull)
-#testfull <- cbind(testfull$id, log10(testfull[,-1]+1)) # logaritmi
-#names(testfull) <- nimet
+nimet <- names(testfull)
+testfull <- cbind(testfull$id, log10(testfull[,-1]+1)) # logaritmi
+names(testfull) <- nimet
 
 ### jaetaan osiin
 apu <- split(trainfull, trainfull$target)
