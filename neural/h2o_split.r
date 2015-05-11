@@ -1,4 +1,8 @@
 #### CREATE CLUSTER ####
+
+# working directory
+# setwd
+
 #install.packages("h2o")
 library(h2o)
 localH2O <- h2o.init(nthread=4,Xmx="10g") # allocate memory
