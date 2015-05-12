@@ -34,7 +34,8 @@ response <- ncol(train.hex)
 submission <- read.csv("sampleSubmission.csv")
 submission[,2:10] <- 0
 
-for(i in 1:20){
+# Continue from 2:
+for(i in 2:20){
 print(i)
 model <- h2o.deeplearning(x=predictors,
                           y=response,
