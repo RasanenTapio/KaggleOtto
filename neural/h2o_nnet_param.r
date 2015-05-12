@@ -135,7 +135,7 @@ train1.hex <- as.h2o(localH2O,apu_train1) # 3/10
 train2.hex <- as.h2o(localH2O,apu_train2) # 3/10
 train3.hex <- as.h2o(localH2O,apu_train3) # 3/10
 
-test.hex <- as.h2o(localH2O,valid[,-1]) # 1/10 for validating ensemble
+test.hex <- as.h2o(localH2O,valid) # 1/10 for validating ensemble
 
 #### MODEL ####
 
@@ -171,19 +171,15 @@ for (i in 1:20) {
 						  rate_decay =  0.5,
                           seed=i)
 
-	#assign(paste("model",i,sep=""),model_temp)
+	assign(paste("model",i,sep=""),model_temp)
 	
-	##
-	tulos_temp <- as.data.frame(h2o.predict(model_temp,test.hex))[,-1]
-	LogLoss(oikeat_valid, tulos_temp)
-	#
 	tulos_temp <- as.data.frame(h2o.predict(model_temp,test.hex))[,-1]
 	
 	# Save model and logloss
 	log_results[i,1] <- paste("model", i, sep="")
 	log_results[i,2] <- LogLoss(oikeat_valid, tulos_temp)
 	# Report results
-	print(log_results[i,1])
+	print(log_results[i,])
 }
 
 # Predict with validation set and calculate LogLoss
@@ -195,31 +191,19 @@ for (i in 1:20) {
 
 best_models <- as.data.frame(log_results)
 names(best_models) <- c("model", "logloss")
-best_models <- best_models[sort(best_models$logloss),]
+best_models <- best_models[order(best_models$logloss),]
 
-#### GET 3 best models
-# sort by logloss
-best_model1 <- as.data.frame(h2o.predict(model19,test.hex))[,-1]
-best_model2 <- as.data.frame(h2o.predict(model12,test.hex))[,-1]
-best_model3 <- as.data.frame(h2o.predict(model7,test.hex))[,-1]
-
-comb_model <- best_model1 + best_model2 + best_model3
-comb_model <- comb_model *(1/3)
-
-LogLoss(oikeat_valid, comb_model)
-
-# read fulldat
-#testfull.hex <- as.h2o(localH2O,testfull)
-
+# get x models
+models_to_get <- 10
 
 #### GET 20 best models
 #comb_model <- as.data.frame(h2o.predict(model7,testfull.hex))[,-1]
 comb_model <- comb_model*0
-for (i in 1:20) {
+for (i in 1:models_to_get) {
 	add_model <- as.data.frame(h2o.predict(get(paste("model", i, sep = "")),test0.hex))[,-1]
 	comb_model <- comb_model + add_model
 }
-comb_model <- comb_model*(1/20)
+comb_model <- comb_model*(1/models_to_get)
 LogLoss(oikeat_valid, comb_model) # 0.708555
 
 #### GENERATE TRAINING DATA (METADATA)
