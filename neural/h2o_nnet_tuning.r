@@ -6,31 +6,36 @@ response <- 1
 # Checkpoint and best model:
 # dlmodel_loaded <- h2o.loadModel(h2oServer, "<path>")
 
-mallit <- list(c(897, 565, 343), c(997,665,443),c(1011,674,449),
-	c(897, 565, 897), c(997,665,997),c(1011,674,1011),
-	c(897, 897, 897), c(997,997,997),c(1011,1011,1011),
-	c(997, 897, 665), c(1011,997,897),c(997,674,449))
+mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,897,665))
 
 # list(c(897, 565, 343), c(997,665,443),c(1011,674,449)) # 10 epochs = 2h näillä noin?
 # 17,85%, 18,06%,  17,72%
+# choose 3-5 best and train total of 25-models? (seed = 1, seed = 2 and save results?)
+
+# 6 best models from training:
+# [897, 565, 343] [1011, 674, 449] [997, 897, 665]
+# [997, 665, 443] [897, 897, 897] [997, 674, 449]
+# 20,60%, 20,75%, 20,94%
+# 21,07%, 21,30%, 21,70% 
 
 grid_search <- h2o.deeplearning(x=predictors, y=response,
-		data=train0.hex, validation = test.hex,
+		data=train0.hex,
 		hidden=mallit,
 		activation="Tanh",
 		classification=T,
 		  hidden_dropout_ratio=c(0,0,0),
 		  input_dropout_ratio = 0,
-		  epochs=1.5,
+		  epochs=15,
 		  l1=0,
 		  l2=0,
 		  rho=0.99,
 		  epsilon=1e-10,
 		  train_samples_per_iteration = 2000,
+		  holdout_fraction=0.1,
 		  max_w2=10,
 		  balance_classes = T,
 		  rate_decay = 0.05,
-		seed=2)
+		seed=c(1,2))
 		
 # next: find a model that outperforms c(xx,xx,xx) with rate_decay = 0.05 and 0 dropout
 
