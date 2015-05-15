@@ -13,7 +13,7 @@ library(nnet)
 #library(randomForest)
 #install.packages("h2o")
 library(h2o)
-localH2O <- h2o.init(nthread=4,Xmx="10g") # allocate memory
+localH2O <- h2o.init(nthread=4,Xmx="10g") # allocate more memory
 
 ###### READ DATA ######
 trainfull <- read.csv("C:/ddata/datat/train.csv", header = TRUE)
@@ -25,8 +25,6 @@ LogLoss <- function(actual, predicted, eps=1e-15) {
   predicted[predicted > 1 - eps] <- 1 - eps;
   -1/nrow(actual)*(sum(actual*log(predicted)))
 }
-
-
 
 ###### DATA TRANSFORMATION ######
 for(i in 1:9) {
@@ -59,6 +57,11 @@ if (transform_data == 2) {
 	names(testfull) <- nimet
 	print("sqrt+3/4")
 }
+
+#### If full data to train:
+trainx.hex <- as.h2o(localH2O,trainfull)
+
+#### END OF EXPERIMENT 2 ####
 
 ### Split by target before sample ###
 apu <- split(trainfull, trainfull$target)
@@ -131,9 +134,9 @@ apu_train0 <- rbind(apu_train1, apu_train2, apu_train3) # full data
 
 # Load data to cluster (3/10 of data)
 train0.hex <- as.h2o(localH2O,apu_train0) # 9/10
-train1.hex <- as.h2o(localH2O,apu_train1) # 3/10
-train2.hex <- as.h2o(localH2O,apu_train2) # 3/10
-train3.hex <- as.h2o(localH2O,apu_train3) # 3/10
+#train1.hex <- as.h2o(localH2O,apu_train1) # 3/10
+#train2.hex <- as.h2o(localH2O,apu_train2) # 3/10
+#train3.hex <- as.h2o(localH2O,apu_train3) # 3/10
 
 test.hex <- as.h2o(localH2O,valid) # 1/10 for validating ensemble
 

@@ -1,25 +1,31 @@
 #### TUNING AND MODEL SELECTION ####
 
 # Select response and predictors
-predictors <- 2:(ncol(train0.hex))
+predictors <- 2:(ncol(trainx.hex))
 response <- 1
 # Checkpoint and best model:
 # dlmodel_loaded <- h2o.loadModel(h2oServer, "<path>")
 
-mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,897,665))
+#mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,897,665)) # (a)
+mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,665,443)) # (b)
 
 # list(c(897, 565, 343), c(997,665,443),c(1011,674,449)) # 10 epochs = 2h näillä noin?
 # 17,85%, 18,06%,  17,72%
 # choose 3-5 best and train total of 25-models? (seed = 1, seed = 2 and save results?)
 
+# 10 with validation set (best fit to validation data)
+# 10 without validation set (best fit to training data)
+
 # 6 best models from training:
-# [897, 565, 343] [1011, 674, 449] [997, 897, 665]
-# [997, 665, 443] [897, 897, 897] [997, 674, 449]
+# [897, 565, 343] [1011, 674, 449] [997, 897, 665] (- a)
+# [997, 665, 443](b) [897, 897, 897] [997, 674, 449]
 # 20,60%, 20,75%, 20,94%
 # 21,07%, 21,30%, 21,70% 
 
+# c(997,897,665)) takes long to train, choose c(997,665,443) instead
+
 grid_search <- h2o.deeplearning(x=predictors, y=response,
-		data=train0.hex,
+		data=trainx.hex,
 		hidden=mallit,
 		activation="Tanh",
 		classification=T,
@@ -31,11 +37,13 @@ grid_search <- h2o.deeplearning(x=predictors, y=response,
 		  rho=0.99,
 		  epsilon=1e-10,
 		  train_samples_per_iteration = 2000,
-		  holdout_fraction=0.1,
 		  max_w2=10,
 		  balance_classes = T,
 		  rate_decay = 0.05,
-		seed=c(1,2))
+		seed=c(11,15, 7))
+
+# train 6-9 models without (obs! this has 200 more samples and takes longer to train)
+# holdout_fraction=0.1
 		
 # next: find a model that outperforms c(xx,xx,xx) with rate_decay = 0.05 and 0 dropout
 
@@ -62,14 +70,14 @@ round(LogLoss(oikeat_valid, avg_model),3) # 0.51 (best avg.) -> 0.508 -> # 0.505
 
 #### Utility (Average) ####
 #### Search grid 1 ####
-models_to_get <- 5
-comb_model <- as.data.frame(h2o.predict(grid_search@model[[i]],test.hex))[,-1]
+models_to_get <- 3
+comb_model <- as.data.frame(h2o.predict(grid_search@model[[1]],test.hex))[,-1]
 for (i in 2:models_to_get) {
 	add_model <- as.data.frame(h2o.predict(grid_search@model[[i]],test.hex))[,-1]
 	comb_model <- comb_model + add_model
 }
 comb_model <- comb_model*(1/models_to_get)
-round(LogLoss(oikeat_valid, comb_model),3) # 0.493 #0.488 (7)
+round(LogLoss(oikeat_valid, comb_model),3) # 0.493 #0.488 (7) # 0.501
 
 # best10: 0.479
 # best9: 0.483
