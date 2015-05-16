@@ -1,3 +1,62 @@
+### h2o 10 model train with nnet equivalent parameters
+
+#### CREATE CLUSTER ####
+
+# Working directory
+setwd("c:/ddata/datat")
+
+### Parameters ###
+
+transform_data <- 2 # 1 logaritmic, 2 sqrt
+###### LIBRARIES ######
+library(h2o)
+localH2O <- h2o.init(nthread=4,Xmx="10g") # allocate more memory
+
+###### READ DATA ######
+trainfull <- read.csv("C:/ddata/datat/train.csv", header = TRUE)
+testfull <- read.csv("C:/ddata/datat/test.csv", header = TRUE)
+
+###### Utility functions ######
+LogLoss <- function(actual, predicted, eps=1e-15) {
+  predicted[predicted < eps] <- eps;
+  predicted[predicted > 1 - eps] <- 1 - eps;
+  -1/nrow(actual)*(sum(actual*log(predicted)))
+}
+
+###### DATA TRANSFORMATION ######
+for(i in 1:9) {
+levels(trainfull$target)[i] <- i
+}
+trainfull$target <- as.numeric(trainfull$target)
+
+trainfull <- trainfull[,-1]
+
+###### Logaritmic transformation ######
+if (transform_data == 1) {
+	nimet <- c(names(trainfull)[94], names(trainfull)[-94])
+	trainfull <- cbind(trainfull$target, log10(trainfull[,-94]+1)) # logaritmi
+	names(trainfull) <- nimet
+
+	nimet <- names(testfull)
+	testfull <- cbind(testfull$id, log10(testfull[,-1]+1)) # logaritmi
+	names(testfull) <- nimet
+	print("log10")
+}
+
+###### Square root transformation ######
+if (transform_data == 2) {
+	nimet <- c(names(trainfull)[94], names(trainfull)[-94])
+	trainfull <- cbind(trainfull$target, sqrt(trainfull[,-94]+(3/8))) # logaritmi
+	names(trainfull) <- nimet
+
+	nimet <- names(testfull)
+	testfull <- cbind(testfull$id, sqrt(testfull[,-1]+(3/8))) # logaritmi
+	names(testfull) <- nimet
+	print("sqrt+3/4")
+}
+
+#### If full data to train:
+trainx.hex <- as.h2o(localH2O,trainfull)
 #### TUNING AND MODEL SELECTION ####
 
 # Select response and predictors
@@ -16,14 +75,6 @@ mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,665,443)) # (b)
 # 10 with validation set (best fit to validation data)
 # 10 without validation set (best fit to training data)
 
-# 6 best models from training:
-# [897, 565, 343] [1011, 674, 449] [997, 897, 665] (- a)
-# [997, 665, 443](b) [897, 897, 897] [997, 674, 449]
-# 20,60%, 20,75%, 20,94%
-# 21,07%, 21,30%, 21,70% 
-
-# c(997,897,665)) takes long to train, choose c(997,665,443) instead
-
 grid_search <- h2o.deeplearning(x=predictors, y=response,
 		data=trainx.hex,
 		hidden=mallit,
@@ -40,7 +91,7 @@ grid_search <- h2o.deeplearning(x=predictors, y=response,
 		  max_w2=10,
 		  balance_classes = T,
 		  rate_decay = 0.05,
-		seed=c(11,15, 7))
+		seed=c(7,9))
 
 # train 6-9 models without (obs! this has 200 more samples and takes longer to train)
 # holdout_fraction=0.1
@@ -159,5 +210,6 @@ best_ensemble@model$params$hidden
 stack_prob <- as.data.frame(h2o.predict(best_ensemble,test.ensemble))[,-1]
 round(LogLoss(oikeat_valid, stack_prob),3) # 0.601 #0.82 #0.683
 
-# sampleakin voi muuttaa:
-# validation=test.hex,
+# SHUT DOWN
+# Shut down cluster
+# h2o.shutdown(localH2O)

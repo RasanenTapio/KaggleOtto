@@ -291,7 +291,5 @@ write.table(comb_ennuste, file = tulosnimi, row.names = FALSE,
 	quote = FALSE, col.names = TRUE, sep=",")
 	
 # SHUT DOWN
-
-
 # Shut down cluster
 # h2o.shutdown(localH2O)
