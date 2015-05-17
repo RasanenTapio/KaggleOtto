@@ -1,4 +1,6 @@
-### h2o 10 model train with nnet equivalent parameters
+###############
+# Model selection
+###############
 
 #### CREATE CLUSTER ####
 
@@ -8,6 +10,7 @@ setwd("c:/ddata/datat")
 ### Parameters ###
 
 transform_data <- 2 # 1 logaritmic, 2 sqrt
+
 ###### LIBRARIES ######
 library(h2o)
 localH2O <- h2o.init(nthread=4,Xmx="10g") # allocate more memory
@@ -62,15 +65,8 @@ trainx.hex <- as.h2o(localH2O,trainfull)
 # Select response and predictors
 predictors <- 2:(ncol(trainx.hex))
 response <- 1
-# Checkpoint and best model:
-# dlmodel_loaded <- h2o.loadModel(h2oServer, "<path>")
 
-#mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,897,665)) # (a)
 mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,665,443)) # (b)
-
-# list(c(897, 565, 343), c(997,665,443),c(1011,674,449)) # 10 epochs = 2h näillä noin?
-# 17,85%, 18,06%,  17,72%
-# choose 3-5 best and train total of 25-models? (seed = 1, seed = 2 and save results?)
 
 # 10 with validation set (best fit to validation data)
 # 10 without validation set (best fit to training data)
@@ -91,12 +87,7 @@ grid_search <- h2o.deeplearning(x=predictors, y=response,
 		  max_w2=10,
 		  balance_classes = T,
 		  rate_decay = 0.05,
-		seed=c(7,9))
-
-# train 6-9 models without (obs! this has 200 more samples and takes longer to train)
-# holdout_fraction=0.1
-		
-# next: find a model that outperforms c(xx,xx,xx) with rate_decay = 0.05 and 0 dropout
+		seed=c(17,47))
 
 #### MODEL SELECTION ####
 best_model1 <- grid_search@model[[1]]
@@ -114,13 +105,13 @@ bench_model_predicted2 <- as.data.frame(h2o.predict(best_model2,test.hex))[,-1]
 bench_model_predicted3 <- as.data.frame(h2o.predict(best_model3,test.hex))[,-1]
 avg_model <- (bench_model_predicted1 + bench_model_predicted2 + bench_model_predicted3)/3
 
-round(LogLoss(oikeat_valid, bench_model_predicted1),3) # 0.55
-round(LogLoss(oikeat_valid, bench_model_predicted2),3) # 
+round(LogLoss(oikeat_valid, bench_model_predicted1),3)
+round(LogLoss(oikeat_valid, bench_model_predicted2),3)
 round(LogLoss(oikeat_valid, bench_model_predicted3),3)
 round(LogLoss(oikeat_valid, avg_model),3) # 0.51 (best avg.) -> 0.508 -> # 0.505
 
 #### Utility (Average) ####
-#### Search grid 1 ####
+#### Search Grid ####
 models_to_get <- 3
 comb_model <- as.data.frame(h2o.predict(grid_search@model[[1]],test.hex))[,-1]
 for (i in 2:models_to_get) {
@@ -128,32 +119,11 @@ for (i in 2:models_to_get) {
 	comb_model <- comb_model + add_model
 }
 comb_model <- comb_model*(1/models_to_get)
-round(LogLoss(oikeat_valid, comb_model),3) # 0.493 #0.488 (7) # 0.501
+round(LogLoss(oikeat_valid, comb_model),3)
 
-# best10: 0.479
-# best9: 0.483
-# best8: 0.488
-# best7: 0.489
-# best6: 0.493
-# best5: 0.491
-# best4: 0.496
-
-# tai 20 mallia:
-
-##################
-#### STACKING ####
-##################
-models_to_get <- 8
-comb_model2 <- as.data.frame(h2o.predict(grid_search@model[[i]],test.hex))[,-1]
-for (i in 2:models_to_get) {
-	add_model <- as.data.frame(h2o.predict(grid_search@model[[i]],test.hex))[,-1]
-	comb_model2 <- comb_model2 + add_model
-}
-comb_model2 <- comb_model2*(1/models_to_get)
-round(LogLoss(oikeat_valid, comb_model2),3)
-
-comb_b <- comb_model*(6/9) + comb_model2*(3/9)
-round(LogLoss(oikeat_valid, comb_b),3) # 0.477
+###########################
+#### STACKING ENSEBMLE ####
+###########################
 
 #### GENERATE TRAINING DATA (METADATA) ####
 
