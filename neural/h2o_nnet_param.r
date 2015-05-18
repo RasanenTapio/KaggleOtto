@@ -1,5 +1,7 @@
-### h2o 10 model train with nnet equivalent parameters
-
+###############
+# Model selection and tuning
+# Change parameters in grid_search to tune model
+###############
 #### CREATE CLUSTER ####
 
 # Working directory
@@ -7,10 +9,9 @@ setwd("c:/ddata/datat")
 
 ### Parameters
 
-transform_data <- 2 # 1 logaritmic, 2 sqrt
+transform_data <- 2 # Select: 1 = logarithmic, 2 = sqrt
 ###### LIBRARIES ######
 library(nnet)
-#library(randomForest)
 #install.packages("h2o")
 library(h2o)
 localH2O <- h2o.init(nthread=4,Xmx="10g") # allocate more memory
@@ -132,11 +133,11 @@ apu_train2 <- rbind(train4, train5, train6)
 apu_train3 <- rbind(train7, train8, train9)
 apu_train0 <- rbind(apu_train1, apu_train2, apu_train3) # full data
 
-# Load data to cluster (3/10 of data)
+# Load data to cluster (3/10 or 9/10 of data)
 train0.hex <- as.h2o(localH2O,apu_train0) # 9/10
-#train1.hex <- as.h2o(localH2O,apu_train1) # 3/10
-#train2.hex <- as.h2o(localH2O,apu_train2) # 3/10
-#train3.hex <- as.h2o(localH2O,apu_train3) # 3/10
+train1.hex <- as.h2o(localH2O,apu_train1) # 3/10
+train2.hex <- as.h2o(localH2O,apu_train2) # 3/10
+train3.hex <- as.h2o(localH2O,apu_train3) # 3/10
 
 test.hex <- as.h2o(localH2O,valid) # 1/10 for validating ensemble
 
@@ -185,11 +186,6 @@ for (i in 1:20) {
 	print(log_results[i,])
 }
 
-# Predict with validation set and calculate LogLoss
-# setting: train_samples_per_iteration = -1 (all data) or -2 (auto tuning)
-# holdout_fraction
-# use_all_factor_levels
-
 ########### STACKING ENSEMBLE #############
 
 best_models <- as.data.frame(log_results)
@@ -200,7 +196,7 @@ best_models <- best_models[order(best_models$logloss),]
 models_to_get <- 10
 
 #### GET 20 best models
-#comb_model <- as.data.frame(h2o.predict(model7,testfull.hex))[,-1]
+comb_model <- as.data.frame(h2o.predict(model7,testfull.hex))[,-1]
 comb_model <- comb_model*0
 for (i in 1:models_to_get) {
 	add_model <- as.data.frame(h2o.predict(get(paste("model", i, sep = "")),test0.hex))[,-1]
@@ -232,6 +228,7 @@ names(train_stack) <- c("target", paste("C",1:27, sep = ""))
 dim(test_stack); dim(train_stack) # 1 responce, 27 variables (3x9)
 
 #### TEST (Use Naive Bayes instead? or nnet package?)
+# note: nnet performed better
 
 train.ensemble <- as.h2o(localH2O,train_stack)
 test.ensemble <- as.h2o(localH2O,test_stack)
@@ -270,11 +267,12 @@ LogLoss(oikeat_valid, stack_prob) # 0.6741 ... better than 0.792
 	
 # Avg
 tulos_avg <- test.ensemble1 * 0.34 + test.ensemble2 * 0.33 + test.ensemble3 * 0.33
+# note average ensemble performed best
 
 LogLoss(oikeat_valid, tulos_avg) # 0.8795 # 0.752
 
 ######## SAVE RESULTS ##########
-### Tallennetaan tulokset
+### Save results
 uusin_tulos <- "ensemble_20m_test1"
 kansio <-  "C:/ddata/results/nn_"
 palautus <- comb_model

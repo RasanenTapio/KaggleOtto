@@ -1,7 +1,7 @@
+####################
+## Use meta data of 3 models to create stacking ensemble
+####################
 #### CREATE CLUSTER ####
-
-# working directory
-# setwd
 
 #install.packages("h2o")
 library(h2o)
@@ -28,25 +28,27 @@ trainfull$target <- as.numeric(trainfull$target)
 
 trainfull <- trainfull[,-1]
 
+### TRANSFORMATIONS
+
 ## Logaritmic transformation
 nimet <- c(names(trainfull)[94], names(trainfull)[-94])
-trainfull <- cbind(trainfull$target, log10(trainfull[,-94]+1)) # logaritmi
+trainfull <- cbind(trainfull$target, log10(trainfull[,-94]+1))
 names(trainfull) <- nimet
 
 nimet <- names(testfull)
-testfull <- cbind(testfull$id, log10(testfull[,-1]+1)) # logaritmi
+testfull <- cbind(testfull$id, log10(testfull[,-1]+1))
 names(testfull) <- nimet
 
-### Or Square root
+### Or Square root (variance-stabilizing)
 nimet <- c(names(trainfull)[94], names(trainfull)[-94])
-trainfull <- cbind(trainfull$target, sqrt(trainfull[,-94]+(3/8))) # logaritmi
+trainfull <- cbind(trainfull$target, sqrt(trainfull[,-94]+(3/8)))
 names(trainfull) <- nimet
 
 nimet <- names(testfull)
-testfull <- cbind(testfull$id, sqrt(testfull[,-1]+(3/8))) # logaritmi
+testfull <- cbind(testfull$id, sqrt(testfull[,-1]+(3/8)))
 names(testfull) <- nimet
 
-### jaetaan osiin
+### Split by target
 apu <- split(trainfull, trainfull$target)
 
 # Initial:
@@ -102,7 +104,7 @@ apu <- split(trainfull, trainfull$target)
 	
 	dim(trainfull) - dim(train1) - dim(train2) - dim(train3) - dim(train4) - dim(train5) - dim(valid) - dim(train6) - dim(train7) - dim(train8) - dim(train9)
 	
-	# Oikeiden matriisi
+	# Create matrix for testing & validation
 	
 	oikeat_valid <- matrix(0, dim(valid)[1], 9)
 
@@ -131,7 +133,7 @@ test.hex <- as.h2o(localH2O,valid[,-1])
 predictors <- 2:(ncol(train.hex))
 response <- 1
 
-# Fit 3 models:
+# Fit 3 models and select 3 best:
 
 model1 <- h2o.deeplearning(x=predictors,
                           y=response,
@@ -184,40 +186,19 @@ model3 <- h2o.deeplearning(x=predictors,
                           train_samples_per_iteration=2000,
                           max_w2=10,
                           seed=1)
-						  
-# Beat the benchmark code, modified:
-model4 <- h2o.deeplearning(x=predictors,
-                          y=response,
-                          data=train0.hex,
-                          classification=T,
-                          activation="TanhWithDropout",
-                          hidden=c(1024,512,256),
-                          hidden_dropout_ratio=c(0.5,0.5,0.5),
-                          input_dropout_ratio=0.05,
-                          epochs=50,
-                          l1=1e-5,
-                          l2=1e-5,
-                          rho=0.99,
-                          epsilon=1e-8,
-                          train_samples_per_iteration=2000,
-                          max_w2=10,
-                          seed=1)
 
 # Predict with validation set and calculate LogLoss
 
-# model1
+# model1-model3
 
 tulos1 <- as.data.frame(h2o.predict(model1,test.hex))[,-1]
 tulos2 <- as.data.frame(h2o.predict(model2,test.hex))[,-1]
 tulos3 <- as.data.frame(h2o.predict(model3,test.hex))[,-1]
-tulos4 <- as.data.frame(h2o.predict(model4,test.hex))[,-1]
 
-# katsotaan:
-# prev # current
+# prev # current # improved
 LogLoss(oikeat_valid, tulos1) # 0.87 # 0.7378 # 0.84
 LogLoss(oikeat_valid, tulos2) # 0.96 # 0.73
 LogLoss(oikeat_valid, tulos3) # 0.89 # 1.23
-LogLoss(oikeat_valid, tulos4)
 
 ########### STACKING ENSEMBLE #############
 
@@ -240,10 +221,10 @@ test_stack <- cbind(valid[,1], test.ensemble1, test.ensemble2, test.ensemble3)
 names(test_stack) <- c("target", paste("C",1:27, sep = ""))
 names(train_stack) <- c("target", paste("C",1:27, sep = ""))
 
-# dim
+# Check dimensions
 dim(test_stack); dim(train_stack) # 1 responce, 27 variables (3x9)
 
-#### TEST
+#### TEST ####
 
 train.ensemble <- as.h2o(localH2O,train_stack)
 test.ensemble <- as.h2o(localH2O,test_stack)

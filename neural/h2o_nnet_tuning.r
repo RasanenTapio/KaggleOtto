@@ -1,5 +1,6 @@
 ###############
-# Model selection
+# Model selection and tuning
+# Change parameters in grid_search to tune model
 ###############
 
 #### CREATE CLUSTER ####
@@ -66,7 +67,8 @@ trainx.hex <- as.h2o(localH2O,trainfull)
 predictors <- 2:(ncol(trainx.hex))
 response <- 1
 
-mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,665,443)) # (b)
+#mallit <- list(c(897, 565, 343), c(1011,674,449),c(997,665,443)) # (b)
+mallit <- c(276,184,81)
 
 # 10 with validation set (best fit to validation data)
 # 10 without validation set (best fit to training data)
@@ -76,7 +78,7 @@ grid_search <- h2o.deeplearning(x=predictors, y=response,
 		hidden=mallit,
 		activation="Tanh",
 		classification=T,
-		  hidden_dropout_ratio=c(0,0,0),
+		  hidden_dropout_ratio= c(0,0,0),
 		  input_dropout_ratio = 0,
 		  epochs=15,
 		  l1=0,
@@ -87,7 +89,7 @@ grid_search <- h2o.deeplearning(x=predictors, y=response,
 		  max_w2=10,
 		  balance_classes = T,
 		  rate_decay = 0.05,
-		seed=c(17,47))
+		seed=c(17,47,7,9,13,1,2,3))
 
 #### MODEL SELECTION ####
 best_model1 <- grid_search@model[[1]]
