@@ -11,15 +11,12 @@ localH2O <- h2o.init(nthread=4,Xmx="10g") # allocate memory
 trainfull <- read.csv("C:/ddata/datat/train.csv", header = TRUE)
 testfull <- read.csv("C:/ddata/datat/test.csv", header = TRUE)
 
-# Tulosten arviointia varten
+# Log Loss function
 LogLoss <- function(actual, predicted, eps=1e-15) {
   predicted[predicted < eps] <- eps;
   predicted[predicted > 1 - eps] <- 1 - eps;
   -1/nrow(actual)*(sum(actual*log(predicted)))
 }
-
-library(nnet)
-library(randomForest)
 
 for(i in 1:9) {
 levels(trainfull$target)[i] <- i
@@ -51,9 +48,7 @@ names(testfull) <- nimet
 ### Split by target
 apu <- split(trainfull, trainfull$target)
 
-# Initial:
-
-	# Nollataan
+	# Initial:
 	train1 <- trainfull[0,]
 	train2 <- train1
 	train3 <- train1
@@ -67,7 +62,6 @@ apu <- split(trainfull, trainfull$target)
 	valid <- train1
 	nimet <- names(trainfull)
 
-	# Tasainen otos jokaista luokkaa
 	for (i in 1:9 ){
 		ot <- as.data.frame(apu[i])
 		names(ot) <- nimet

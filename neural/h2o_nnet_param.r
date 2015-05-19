@@ -62,8 +62,6 @@ if (transform_data == 2) {
 #### If full data to train:
 trainx.hex <- as.h2o(localH2O,trainfull)
 
-#### END OF EXPERIMENT 2 ####
-
 ### Split by target before sample ###
 apu <- split(trainfull, trainfull$target)
 
@@ -267,7 +265,7 @@ LogLoss(oikeat_valid, stack_prob) # 0.6741 ... better than 0.792
 	
 # Avg
 tulos_avg <- test.ensemble1 * 0.34 + test.ensemble2 * 0.33 + test.ensemble3 * 0.33
-# note average ensemble performed best
+# note: average ensemble performed best
 
 LogLoss(oikeat_valid, tulos_avg) # 0.8795 # 0.752
 
